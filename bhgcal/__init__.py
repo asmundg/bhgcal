@@ -52,5 +52,5 @@ def main():
         .content.decode('utf-8'))
 
     # Stitch together the two ics files
-    print(stdout_encode('\n'.join(head.split('\n')[:-3])
+    print(stdout_encode('\n'.join(head.split('\n')[:-1])
                         + '\n'.join(tail.split('\n')[3:])))
