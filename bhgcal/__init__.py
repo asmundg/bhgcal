@@ -40,6 +40,7 @@ def main():
         login_url, data={'UserName': user, 'Password': password})
     response.raise_for_status()
     now = datetime.now()
+    next = now + relativedelta(month=1)
     head = (
         session.get(ics_url.format(
             base=bases[base], year=now.year, month=now.month))
@@ -47,8 +48,7 @@ def main():
     tail = (
         session.get(
             ics_url.format(
-                base=bases[base], year=now.year, month=(
-                    now + relativedelta(month=1)).month))
+                base=bases[base], year=next.year, month=next.month))
         .content.decode('utf-8'))
 
     # Stitch together the two ics files
