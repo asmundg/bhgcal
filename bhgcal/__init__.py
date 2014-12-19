@@ -1,30 +1,56 @@
 from __future__ import unicode_literals
 
-import os
 from datetime import datetime
+import os
+import sys
 
 from dateutil.relativedelta import relativedelta
 import requests
 
+bases = {'r\xf8sslyngen': 59,
+         'myrulla': 61}
+
 login_url = 'http://bukkesprangetnatur.barnehage.no/LogOn'
 ics_url = ('http://bukkesprangetnatur.barnehage.no/Ukeplan/'
-           'PlanMonthAsICalendar/61?year={year}&month={month}')
+           'PlanMonthAsICalendar/{base}?year={year}&month={month}')
+
+
+def stdin_decode(data):
+    if sys.stdin.encoding is not None:
+        return data.decode(sys.stdin.encoding)
+    else:
+        # Just assume we're modern if nothing else is specified
+        return data.decode('utf-8')
+
+
+def stdout_encode(data):
+    if sys.stdout.encoding is not None:
+        return data.encode(sys.stdout.encoding)
+    else:
+        # Just assume we're modern if nothing else is specified
+        return data.encode('utf-8')
 
 
 def main():
-    user, password = os.environ['USER'], os.environ['PASSWORD']
+    base, user, password = (
+        stdin_decode(os.environ['BASE']), os.environ['USER'],
+        os.environ['PASSWORD'])
     session = requests.Session()
     response = session.post(
         login_url, data={'UserName': user, 'Password': password})
     response.raise_for_status()
     now = datetime.now()
-    head = session.get(
-        ics_url.format(year=now.year, month=now.month)).text
-    tail = session.get(
-        ics_url.format(
-            year=now.year, month=(
-                now + relativedelta(month=1)).month)).text
+    head = (
+        session.get(ics_url.format(
+            base=bases[base], year=now.year, month=now.month))
+        .content.decode('utf-8'))
+    tail = (
+        session.get(
+            ics_url.format(
+                base=bases[base], year=now.year, month=(
+                    now + relativedelta(month=1)).month))
+        .content.decode('utf-8'))
 
     # Stitch together the two ics files
-    print(('\n'.join(head.split('\n')[:-3])
-           + '\n'.join(tail.split('\n')[3:])).encode('utf-8'))
+    print(stdout_encode('\n'.join(head.split('\n')[:-3])
+                        + '\n'.join(tail.split('\n')[3:])))
